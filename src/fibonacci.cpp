@@ -15,19 +15,33 @@ uint64_t fib_naive(uint32_t n) {
 
 // fib_memo is a memoized, recursive version of fib_naive (complexity: linear)
 uint64_t fib_memo(uint32_t n) {
-    static unordered_map<uint32_t, uint64_t> memo{{0, 0}, {1, 1}};
+    static std::unordered_map<uint32_t, uint64_t> memo{{0, 0}, {1, 1}};
     if (!memo.count(n)) {
         memo[n] = fib_memo(n - 1) + fib_memo(n - 2);
     }
+
     return memo[n];
+}
+
+// fib_tail is the tail-recursive version of fib (complexity: linear + no call stack)
+uint64_t fib_tail(uint64_t n, uint64_t prev = 0, uint64_t cur = 1) {
+    if (n == 0) {
+        return prev;
+    }
+
+    return fib_tail(n, cur, prev + cur);
 }
 
 // fib_iter is the iterative version of fibonacci (complexity: linear + no call stack)
 uint64_t fib_iter(uint32_t n) {
+    if (n == 0) {
+        return 0;
+    }
+
     uint32_t prev = 0;
     uint32_t cur = 1;
 
-    for (uint32_t i = 1; i <= n; ++i) {
+    for (uint32_t i = 2; i <= n; ++i) {
         auto tmp = prev + cur;
         prev = cur;
         cur = tmp;
@@ -51,6 +65,6 @@ constexpr uint64_t fib_const(uint32_t n) {
 
 int main() {
     for (int i = 0; i < 10; ++i) {
-        cout << i << ": " << fib_const(i) << endl;
+        cout << i << ": " << fib_naive(i) << endl;
     }
 }
