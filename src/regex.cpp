@@ -9,13 +9,8 @@
 
 using namespace std;
 
-template <typename T> void print(T s) {
-    for (auto c : s) {
-        cout << c;
-    }
-    cout << endl;
-}
-
+// Span is a lightweight view on a buffer that provides an iterator interface
+// Inspired by GSL Span
 template <class T> class Span {
   public:
     Span(const T *const buf, size_t N) : buf_(buf), N_(N) {}
@@ -34,10 +29,20 @@ template <class T> class Span {
     const size_t N_;
 };
 
+// Similar to C++17's string_view, but doing this is C++14 compatible ;)
+using StringView = Span<char>;
+
+// Matcher matches a particular type of regex
 class BaseMatcher {
   public:
     virtual ~BaseMatcher() = default;
-    virtual vector<Span<char>> chomp(Span<char>) const = 0;
+
+    // chomp takes a StringView and attempts to chomp off as many
+    // chars it can from it, returning the vector of remaining
+    // StringViews.
+    //
+    // Example: StarMatcher("a").chomp("aab") will return <"aab", "ab", "b">.
+    virtual vector<StringView> chomp(StringView) const = 0;
 
     virtual ostream &operator<<(ostream &os) {
         os << this->_name << "(" << _c << ")";
@@ -54,7 +59,7 @@ class SingleMatcher : public BaseMatcher {
   public:
     SingleMatcher(char c) : BaseMatcher(c, "SingleMatcher") {}
 
-    vector<Span<char>> chomp(Span<char> s) const override {
+    vector<StringView> chomp(StringView s) const override {
         if (s.size() == 0 || s[0] != _c) {
             return {};
         }
@@ -66,8 +71,8 @@ class SingleMatcher : public BaseMatcher {
 class PlusMatcher : public BaseMatcher {
   public:
     PlusMatcher(char c) : BaseMatcher(c, "PlusMatcher") {}
-    vector<Span<char>> chomp(Span<char> s) const override {
-        vector<Span<char>> v;
+    vector<StringView> chomp(StringView s) const override {
+        vector<StringView> v;
         if (s.size() == 0) {
             return {};
         }
@@ -83,8 +88,8 @@ class PlusMatcher : public BaseMatcher {
 class StarMatcher : public BaseMatcher {
   public:
     StarMatcher(char c) : BaseMatcher(c, "StarMatcher") {}
-    vector<Span<char>> chomp(Span<char> s) const override {
-        vector<Span<char>> v;
+    vector<StringView> chomp(StringView s) const override {
+        vector<StringView> v;
         v.push_back(s);
 
         for (auto i = 0; i < s.size() && s[i] == _c; ++i) {
@@ -95,7 +100,7 @@ class StarMatcher : public BaseMatcher {
     }
 };
 
-void print(Span<char> s) {
+void print(StringView s) {
     for (auto c : s) {
         cout << c;
     }
@@ -110,8 +115,8 @@ class RangeMatcher : public BaseMatcher {
         }
     }
 
-    vector<Span<char>> chomp(Span<char> s) const override {
-        vector<Span<char>> v;
+    vector<StringView> chomp(StringView s) const override {
+        vector<StringView> v;
 
         auto low = min(low_, s.size());
         auto high = min(high_, s.size());
@@ -211,7 +216,7 @@ vector<unique_ptr<BaseMatcher>> parse(const string &regex) {
 
 // _match recursively attempts to match s with the regex
 // _match tries all matches greedily. If any one matches, it returns true
-bool _match(const vector<unique_ptr<BaseMatcher>> &matchers, const Span<char> s, size_t regex_start) {
+bool _match(const vector<unique_ptr<BaseMatcher>> &matchers, const StringView s, size_t regex_start) {
     if (regex_start == matchers.size()) {
         return s.empty();
     }
@@ -234,7 +239,7 @@ bool matches(const string &s, const string &regex) {
     for (const auto &m : matchers) {
         cout << m.get() << ", ";
     }
-    return _match(matchers, Span<char>(s.data(), s.size()), 0);
+    return _match(matchers, StringView(s.data(), s.size()), 0);
 }
 
 int main() {
