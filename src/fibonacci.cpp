@@ -55,7 +55,7 @@ uint64_t fib_iter(uint32_t n) {
 // Thus this is equivalent in performance to fib_memo (albeit at compile time).
 constexpr uint64_t fib_const(uint32_t n) {
     if (n <= 1) {
-        return 1;
+        return n;
     }
 
     return fib_const(n - 1) + fib_const(n - 2);
